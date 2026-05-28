@@ -1,0 +1,29 @@
+{
+    "activeFile": "",
+    "expandedProjectPaths": [
+    ],
+    "fileStates": {
+        "Gemini_Generated_Image_lmqg6mlmqg6mlmqg.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "cave_map.tmj": {
+            "scale": 0.605625,
+            "selectedLayer": 1,
+            "viewCenter": {
+                "x": 346.749226006192,
+                "y": 320.33023735810116
+            }
+        }
+    },
+    "last.imagePath": "C:/Users/User/Downloads",
+    "map.lastUsedFormat": "json",
+    "openFiles": [
+    ],
+    "project": "n2.tiled-project",
+    "recentFiles": [
+        "cave_map.tmj",
+        "Gemini_Generated_Image_lmqg6mlmqg6mlmqg.tsx"
+    ],
+    "tileset.lastUsedFormat": "tsx"
+}

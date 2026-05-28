@@ -1,0 +1,56 @@
+{
+    "activeFile": "assets/cave_map.json",
+    "expandedProjectPaths": [
+        ".",
+        "assets"
+    ],
+    "fileStates": {
+        "Gemini_Generated_Image_lmqg6mlmqg6mlmqg.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "assets/cave_map.json": {
+            "scale": 1,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 248,
+                "y": 276
+            }
+        },
+        "assets/cave_map.json#free": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "assets/free.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "cave_map.tmj": {
+            "scale": 0.605625,
+            "selectedLayer": 1,
+            "viewCenter": {
+                "x": 346.749226006192,
+                "y": 320.33023735810116
+            }
+        },
+        "free.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        }
+    },
+    "last.exportedFilePath": "C:/Users/User/Desktop/EPN/26A/Juegos/LastAscend/assets",
+    "last.imagePath": "C:/Users/User/Desktop/EPN/26A/Juegos/LastAscend/assets",
+    "map.lastUsedExportFilter": "JSON map files (*.tmj *.json)",
+    "openFiles": [
+        "assets/cave_map.json"
+    ],
+    "project": "n2.tiled-project",
+    "property.type": "bool",
+    "recentFiles": [
+        "assets/cave_map.json",
+        "assets/free.tsx",
+        "free.tsx",
+        "cave_map.tmj",
+        "Gemini_Generated_Image_lmqg6mlmqg6mlmqg.tsx"
+    ]
+}
