@@ -11,6 +11,7 @@ class Scene2 extends Phaser.Scene {
         this.load.image('fondo_lava', 'assets/Gemini_Generated_Image_ap6o6hap6o6hap6o.png');
         this.load.image('oficinista', 'assets/oficinista.png');
         this.load.image('oficinistaleft', 'assets/oficinista-left.png');
+        this.load.image('bat', 'assets/bat.png');
         this.load.audio('music_lava', 'assets/sounds/lava.mp3');
     }
 
@@ -44,15 +45,10 @@ class Scene2 extends Phaser.Scene {
     this.isDead = false;
 
     // ── ENEMIGO VOLADOR ──────────────────────────────────────────────
-    const gfxBird = this.make.graphics({ x: 0, y: 0, add: false });
-    gfxBird.fillStyle(0xff0000);
-    gfxBird.fillCircle(16, 16, 16);
-    gfxBird.generateTexture('bird', 32, 32);
-    gfxBird.destroy();
-
-    this.bird = this.physics.add.sprite(400, 400, 'bird');
+    this.bird = this.physics.add.sprite(400, 400, 'bat');
     this.bird.setCollideWorldBounds(true);
     this.bird.setBounceX(1);
+    this.bird.setScale(0.2);
     this.bird.setVelocityX(120);
     this.bird.body.setAllowGravity(false);
 
@@ -102,50 +98,7 @@ class Scene2 extends Phaser.Scene {
         }
     }, null, this);
 
-    // ── POWER-UPS Y DEMÁS LÓGICA (Se mantiene igual...) ────────────────
-    const gfxTime = this.make.graphics({ x: 0, y: 0, add: false });
-    gfxTime.fillStyle(0x00ff44);
-    gfxTime.fillCircle(16, 16, 16);
-    gfxTime.generateTexture('time_apple2', 32, 32);
-    gfxTime.destroy();
-
-    const gfxBig = this.make.graphics({ x: 0, y: 0, add: false });
-    gfxBig.fillStyle(0xff4400);
-    gfxBig.fillCircle(16, 16, 16);
-    gfxBig.generateTexture('big_apple2', 32, 32);
-    gfxBig.destroy();
-
-    this.timeApples = this.physics.add.staticGroup();
-    this.bigApples  = this.physics.add.staticGroup();
-
-    const itemsLayer = map.getObjectLayer('Capa de Objetos 1');
-    if (itemsLayer) {
-        itemsLayer.objects.forEach(obj => {
-            const kind = obj.type || obj.class || '';
-            if (kind === 'time_apple') {
-                this.timeApples.create(obj.x, obj.y, 'time_apple2').setScale(0.8).refreshBody();
-            } else if (kind === 'big_apple') {
-                this.bigApples.create(obj.x, obj.y, 'big_apple2').setScale(0.8).refreshBody();
-            }
-        });
-    }
-
-    this.physics.add.overlap(this.player, this.timeApples, this.collectTimeApple, null, this);
-    this.physics.add.overlap(this.player, this.bigApples,  this.collectBigApple,  null, this);
-
-    this.timeLeft = 60;
-    this.timerText = this.add.text(16, 16, 'TIEMPO: 15', {
-        fontSize: '28px', fill: '#ff4400', fontFamily: 'monospace', fontWeight: 'bold', stroke: '#000000', strokeThickness: 4
-    }).setScrollFactor(0);
-
-    this.add.text(400, 16, '🔥 NIVEL 2', {
-        fontSize: '22px', fill: '#ffaa00', fontFamily: 'monospace', fontWeight: 'bold', stroke: '#000000', strokeThickness: 3
-    }).setOrigin(0.5, 0).setScrollFactor(0);
-
-    this.timeEvent = this.time.addEvent({
-        delay: 1000, callback: this.updateTimer, callbackScope: this, loop: true
-    });
-
+   
     // ── DETECTAR ZONA DE VICTORIA (META) ─────────────────────────────
 this.winZones = this.physics.add.staticGroup();
 
@@ -162,8 +115,55 @@ this.winZones = this.physics.add.staticGroup();
         });
     }
 
-    // Cuando el jugador toque la zona invisible, ¡GANA!
     this.physics.add.overlap(this.player, this.winZones, this.playerWin, null, this);
+
+    // ── LLUVIA DE LAVA ───────────────────────────────────────────────
+    const lavaColors = [0xffee00, 0xff8800, 0xff2200];
+    lavaColors.forEach((color, i) => {
+        const g = this.make.graphics({ x: 0, y: 0, add: false });
+        g.fillStyle(color);
+        g.fillRect(0, 0, 14, 14);
+        g.generateTexture('lavadrop_' + i, 14, 14);
+        g.destroy();
+    });
+
+    this.lavaSource = this.add.graphics();
+    this.lavaSource.fillStyle(0xffee00, 1);
+    this.lavaSource.fillCircle(0, 0, 22);
+    this.lavaSource.lineStyle(4, 0xff8800, 1);
+    this.lavaSource.strokeCircle(0, 0, 22);
+    this.lavaSourceX = map.widthInPixels * 0.5;
+    this.lavaSourceY = 60;
+    this.lavaSource.setPosition(this.lavaSourceX, this.lavaSourceY);
+
+    this.lavaDrops = this.physics.add.group();
+
+    this.lavaSpawnEvent = this.time.addEvent({
+        delay: 800,
+        callback: this.spawnLavaDrop,
+        callbackScope: this,
+        loop: true
+    });
+
+    this.physics.add.overlap(this.player, this.lavaDrops, () => {
+        if (!this.isDead) this.playerDie();
+    });
+
+    // ── TEMPORIZADOR ────────────────────────────────────────────────
+    this.timeLeft = 60;
+    this.timerText = this.add.text(16, 16, 'TIEMPO: 60', {
+        fontSize: '28px', fill: '#ff4400', fontFamily: 'monospace',
+        fontWeight: 'bold', stroke: '#000000', strokeThickness: 4
+    }).setScrollFactor(0);
+
+    this.add.text(400, 16, '🔥 NIVEL 2', {
+        fontSize: '22px', fill: '#ffaa00', fontFamily: 'monospace',
+        fontWeight: 'bold', stroke: '#000000', strokeThickness: 3
+    }).setOrigin(0.5, 0).setScrollFactor(0);
+
+    this.timeEvent = this.time.addEvent({
+        delay: 1000, callback: this.updateTimer, callbackScope: this, loop: true
+    });
 
         // ── CÁMARA Y CONTROLES ───────────────────────────────────────────
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
@@ -197,6 +197,20 @@ this.winZones = this.physics.add.staticGroup();
         }
     });
 }
+
+    spawnLavaDrop() {
+        if (this.isDead) return;
+        const colors = ['lavadrop_0', 'lavadrop_1', 'lavadrop_2'];
+        const key = colors[Phaser.Math.Between(0, 2)];
+        // Caen desde cerca del círculo con algo de dispersión horizontal
+        const x = this.lavaSourceX + Phaser.Math.Between(-80, 80);
+        const drop = this.lavaDrops.create(x, this.lavaSourceY + 28, key);
+        drop.setVelocityY(Phaser.Math.Between(180, 320));
+        drop.setVelocityX(Phaser.Math.Between(-40, 40));
+        drop.body.setAllowGravity(false);
+        // Destruir la gota al salir del mundo
+        this.time.delayedCall(4000, () => { if (drop && drop.active) drop.destroy(); });
+    }
 
     collectTimeApple(player, apple) {
         apple.destroy();
@@ -237,6 +251,7 @@ this.winZones = this.physics.add.staticGroup();
     this.isDead = true; // Bloquea muertes o movimientos adicionales
 
     if (this.timeEvent) this.timeEvent.destroy(); // Detiene el temporizador de 15s
+    if (this.lavaSpawnEvent) this.lavaSpawnEvent.destroy();
 
     // Detener al jugador por completo
     this.player.setVelocity(0, 0);

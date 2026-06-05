@@ -10,6 +10,8 @@ class CaveScene extends Phaser.Scene {
         this.load.image('oficinista', 'assets/oficinista.png');
         this.load.image('oficinistaleft', 'assets/oficinista-left.png');
         this.load.audio('music_cave', 'assets/sounds/sounds-cave.mp3');
+        this.load.image('time_apple', 'assets/watch.png');
+        this.load.image('big_apple', 'assets/powerup.png');
     }
 
     create() {
@@ -43,17 +45,6 @@ class CaveScene extends Phaser.Scene {
         }, null, this);
 
         // ── POWER-UPS ────────────────────────────────────────────────────
-        const gfxTime = this.make.graphics({ x: 0, y: 0, add: false });
-        gfxTime.fillStyle(0x00ff44);
-        gfxTime.fillCircle(16, 16, 16);
-        gfxTime.generateTexture('time_apple', 32, 32);
-        gfxTime.destroy();
-
-        const gfxBig = this.make.graphics({ x: 0, y: 0, add: false });
-        gfxBig.fillStyle(0xff4400);
-        gfxBig.fillCircle(16, 16, 16);
-        gfxBig.generateTexture('big_apple', 32, 32);
-        gfxBig.destroy();
 
         this.timeApples = this.physics.add.staticGroup();
         this.bigApples  = this.physics.add.staticGroup();
@@ -63,9 +54,9 @@ class CaveScene extends Phaser.Scene {
             itemsLayer.objects.forEach(obj => {
                 const kind = obj.type || obj.class || '';
                 if (kind === 'time_apple') {
-                    this.timeApples.create(obj.x, obj.y, 'time_apple').setScale(0.8).refreshBody();
+                    this.timeApples.create(obj.x, obj.y, 'time_apple').setScale(0.3).refreshBody();
                 } else if (kind === 'big_apple') {
-                    this.bigApples.create(obj.x, obj.y, 'big_apple').setScale(0.8).refreshBody();
+                    this.bigApples.create(obj.x, obj.y, 'big_apple').setScale(0.3).refreshBody();
                 }
             });
         }
