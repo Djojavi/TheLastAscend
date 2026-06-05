@@ -4,87 +4,88 @@ class CaveScene extends Phaser.Scene {
     }
 
     preload() {
-        // El mapa lúgubre que ya tienes exportado
         this.load.tilemapTiledJSON('mapa_cueva', 'assets/cave_map.json');
-
-        // 1. Cargamos la imagen que usaste para dibujar las plataformas/bloques
         this.load.image('texturas_bloques', 'assets/free.png');
-
-        // 2. Cargamos la imagen que usaste como fondo visual
         this.load.image('fondo_oscuro', 'assets/background4a.png');
-
-        // El protagonista
-        // Change this in preload() to test if the image shows uffp at all:
         this.load.image('oficinista', 'assets/oficinista.png');
     }
 
     create() {
-        // Paso A: Crear el mapa lógico del JSON
+        // ── MAPA ────────────────────────────────────────────────────────
         const map = this.make.tilemap({ key: 'mapa_cueva' });
 
-        // 1. DIBUJAR EL FONDO PRIMERO (Para que quede detrás de todo)
-        // Lo centramos en el origen (0,0) y lo hacemos del tamaño del mapa de Tiled
         let bg = this.add.image(0, 0, 'fondo_oscuro').setOrigin(0, 0);
-        // Opcional: Si tu fondo es más pequeño que el mapa, puedes hacer que se estire:
         bg.setDisplaySize(map.widthInPixels, map.heightInPixels);
+
         const nombreInternoTiled = map.tilesets[0].name;
-        // Paso B: Vincular la imagen de los bloques con Tiled
-        // RECUERDA: 'Nombre_En_Tiled' es el nombre exacto de la pestaña "Tilesets" dentro de Tiled
         const tileset = map.addTilesetImage(nombreInternoTiled, 'texturas_bloques');
-
-        // 2. DIBUJAR LOS BLOQUES ENCIMA DEL FONDO
-        // 'ground' es el nombre de la capa donde dibujaste tus plataformas sólidas en Tiled
         const sueloLayer = map.createLayer('ground', tileset, 0, 0);
-
-        // Activar colisiones en las plataformas
         sueloLayer.setCollisionByExclusion([-1]);
 
-        // 3. CREAR AL JUGADOR (Caminará por delante del fondo y sobre los bloques)
+        // ── JUGADOR ─────────────────────────────────────────────────────
         this.player = this.physics.add.sprite(100, 100, 'oficinista');
         this.player.setCollideWorldBounds(true);
         this.player.setScale(0.15);
+        this.playerBig = false; // flag para evitar doble power-up
 
-        // Colisión física entre el oficinista y las plataformas
+        // ── COLISIÓN CON TILES MORTALES / WIN ───────────────────────────
         this.physics.add.collider(this.player, sueloLayer, (player, tile) => {
             let isDeadly = false;
             let isWin = false;
 
             if (tile.properties) {
-                // Evaluamos si es un bloque mortal
                 if (tile.properties.deadly !== undefined) isDeadly = tile.properties.deadly;
-                else if (tile.properties.customproperties && tile.properties.customproperties.deadly !== undefined) {
-                    isDeadly = tile.properties.customproperties.deadly;
-                }
-
-                // Evaluamos si es el bloque de victoria
-                if (tile.properties.win !== undefined) isWin = tile.properties.win;
-                else if (tile.properties.customproperties && tile.properties.customproperties.win !== undefined) {
-                    isWin = tile.properties.customproperties.win;
-                }
+                if (tile.properties.win    !== undefined) isWin    = tile.properties.win;
             }
 
-            // Ejecutar la acción lógica correspondiente
-            if (isDeadly) {
-                this.playerDie();
-            } else if (isWin) {
-                this.playerWin();
-            }
+            if (isDeadly) this.playerDie();
+            else if (isWin) this.playerWin();
         }, null, this);
 
-        this.timeLeft = 20; // Inicializamos los 20 segundos
+        // ── GENERAR TEXTURAS DE POWER-UPS EN CÓDIGO ─────────────────────
+        // (No necesitas imágenes externas — se crean como círculos de colores)
+        const gfxTime = this.make.graphics({ x: 0, y: 0, add: false });
+        gfxTime.fillStyle(0x00ff44);
+        gfxTime.fillCircle(16, 16, 16);
+        gfxTime.generateTexture('time_apple', 32, 32);
+        gfxTime.destroy();
 
-        // Creamos el elemento visual del texto fijado en la pantalla
+        const gfxBig = this.make.graphics({ x: 0, y: 0, add: false });
+        gfxBig.fillStyle(0xff4400);
+        gfxBig.fillCircle(16, 16, 16);
+        gfxBig.generateTexture('big_apple', 32, 32);
+        gfxBig.destroy();
+
+        this.timeApples = this.physics.add.staticGroup();
+        this.bigApples  = this.physics.add.staticGroup();
+
+        const itemsLayer = map.getObjectLayer('items');
+        if (itemsLayer) {
+            itemsLayer.objects.forEach(obj => {
+                const kind = obj.type || obj.class || '';
+                if (kind === 'time_apple') {
+                    const apple = this.timeApples.create(obj.x, obj.y, 'time_apple');
+                    apple.setScale(0.8).refreshBody();
+                } else if (kind === 'big_apple') {
+                    const apple = this.bigApples.create(obj.x, obj.y, 'big_apple');
+                    apple.setScale(0.8).refreshBody();
+                }
+            });
+        }
+
+        this.physics.add.overlap(this.player, this.timeApples, this.collectTimeApple, null, this);
+        this.physics.add.overlap(this.player, this.bigApples,  this.collectBigApple,  null, this);
+
+        // ── TEMPORIZADOR ────────────────────────────────────────────────
+        this.timeLeft = 20;
+
         this.timerText = this.add.text(16, 16, 'TIEMPO: 20', {
             fontSize: '28px',
-            fill: '#ff0000', // Rojo de alerta
+            fill: '#ff0000',
             fontFamily: 'monospace',
             fontWeight: 'bold'
-        });
+        }).setScrollFactor(0);
 
-        // Importante: Hacemos que el texto siga a la cámara para que no se quede estancado al inicio del mapa
-        this.timerText.setScrollFactor(0);
-
-        // Creamos el bucle de tiempo: se ejecuta cada 1000ms (1 segundo) de manera infinita
         this.timeEvent = this.time.addEvent({
             delay: 1000,
             callback: this.updateTimer,
@@ -92,72 +93,104 @@ class CaveScene extends Phaser.Scene {
             loop: true
         });
 
-        // Ajustar cámaras y teclado (lo que ya tenías)
         this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
         this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
         this.cameras.main.startFollow(this.player, true, 0.05, 0.05);
         this.cursors = this.input.keyboard.createCursorKeys();
     }
-    playerWin() {
-        // 1. Detenemos el reloj de inmediato
-        if (this.timeEvent) {
-            this.timeEvent.destroy();
+
+    collectTimeApple(player, apple) {
+        apple.destroy();
+
+        this.timeLeft += 4;
+        this.timerText.setText('TIEMPO: ' + this.timeLeft);
+
+        // Flash verde en el HUD
+        this.timerText.setStyle({ fill: '#00ff00' });
+        this.time.delayedCall(500, () => {
+            this.timerText.setStyle({ fill: '#ff0000' });
+        });
+
+        this.showFloatingText(player.x, player.y - 40, '+10s ⏱', '#00ff00');
+    }
+
+    collectBigApple(player, apple) {
+        apple.destroy();
+
+        if (!this.playerBig) {
+            this.playerBig = true;
+            this.player.setScale(this.player.scaleX * 2);
+
+            this.bigBar = this.add.graphics().setScrollFactor(0);
+            this.bigBarDuration = 5000;
+            this.bigBarStart = this.time.now;
+
+            this.time.delayedCall(5000, () => {
+                this.player.setScale(this.player.scaleX / 2);
+                this.playerBig = false;
+                if (this.bigBar) { this.bigBar.destroy(); this.bigBar = null; }
+            });
         }
 
-        // 2. Apagamos las físicas del jugador para que no se mueva más
+        this.showFloatingText(player.x, player.y - 40, '¡GRANDE! 🔴', '#ffaa00');
+    }
+
+    showFloatingText(x, y, message, color) {
+        const txt = this.add.text(x, y, message, {
+            fontSize: '22px',
+            fill: color,
+            fontFamily: 'monospace',
+            fontWeight: 'bold',
+            stroke: '#000000',
+            strokeThickness: 3
+        }).setOrigin(0.5);
+
+        this.tweens.add({
+            targets: txt,
+            y: y - 50,
+            alpha: 0,
+            duration: 800,
+            onComplete: () => txt.destroy()
+        });
+    }
+
+    // ── WIN ──────────────────────────────────────────────────────────────
+    playerWin() {
+        if (this.timeEvent) this.timeEvent.destroy();
+
         this.player.setVelocity(0, 0);
         this.player.body.setEnable(false);
-
-        // 3. Pintamos al personaje de verde brillante para indicar éxito
         this.player.setTint(0x00ff00);
 
-        // 4. Desplegamos el aviso de victoria centrado en la pantalla
         let winText = this.add.text(400, 300, '¡NIVEL COMPLETADO!\nLograste escapar...', {
             fontSize: '40px',
             fill: '#00ff00',
             fontFamily: 'monospace',
             fontWeight: 'bold',
             align: 'center'
-        }).setOrigin(0.5);
+        }).setOrigin(0.5).setScrollFactor(0);
 
-        // Lo fijamos a la cámara para que se vea directo en el centro del HUD
-        winText.setScrollFactor(0);
-
-        // 5. Reiniciamos el nivel tras 3 segundos (más adelante aquí cargarás la escena 2)
-        this.time.delayedCall(3000, () => {
-            this.scene.restart();
-        });
+            this.time.delayedCall(3000, () => { this.scene.start('Scene2'); });
     }
 
+    // ── TIMER ────────────────────────────────────────────────────────────
     updateTimer() {
-        this.timeLeft--; // Restamos 1 al contador
-        this.timerText.setText('TIEMPO: ' + this.timeLeft); // Actualizamos el texto en pantalla
-
-        // Si el tiempo llega a cero, el oficinista muere por falta de tiempo
-        if (this.timeLeft <= 0) {
-            this.playerDie();
-        }
+        this.timeLeft--;
+        this.timerText.setText('TIEMPO: ' + this.timeLeft);
+        if (this.timeLeft <= 0) this.playerDie();
     }
 
+    // ── DIE ──────────────────────────────────────────────────────────────
     playerDie() {
-        // Disable player physics so they stop moving/falling
         this.player.setVelocity(0, 0);
         this.player.body.setEnable(false);
-
-        // Turn the player red to visually show damage
         this.player.setTint(0xff0000);
-
-        // Camera shake effect for impact (duration in ms, intensity)
         this.cameras.main.shake(300, 0.02);
-
-        // Wait 1 second (1000ms), then restart the scene
-        this.time.delayedCall(1000, () => {
-            this.scene.restart();
-        });
+        this.time.delayedCall(1000, () => { this.scene.restart(); });
     }
 
+    // ── UPDATE ───────────────────────────────────────────────────────────
     update() {
-        // Movimiento horizontal básico
         if (this.cursors.left.isDown) {
             this.player.setVelocityX(-160);
         } else if (this.cursors.right.isDown) {
@@ -166,14 +199,23 @@ class CaveScene extends Phaser.Scene {
             this.player.setVelocityX(0);
         }
 
-        // Mecánica de salto (Detecta si estás pisando el suelo de Tiled)
         if (this.cursors.up.isDown && this.player.body.blocked.down) {
             this.player.setVelocityY(-350);
+        }
+
+        // Actualizar barra de duración del power-up grande
+        if (this.playerBig && this.bigBar) {
+            const elapsed = this.time.now - this.bigBarStart;
+            const ratio = Math.max(0, 1 - elapsed / this.bigBarDuration);
+            this.bigBar.clear();
+            this.bigBar.fillStyle(0xff4400, 0.8);
+            this.bigBar.fillRect(16, 50, 150 * ratio, 12);
+            this.bigBar.lineStyle(2, 0xffffff, 1);
+            this.bigBar.strokeRect(16, 50, 150, 12);
         }
     }
 }
 
-// Configuración de arranque del juego
 const config = {
     type: Phaser.AUTO,
     width: 800,
@@ -183,10 +225,10 @@ const config = {
         default: 'arcade',
         arcade: {
             gravity: { y: 600 },
-            debug: true // Te permite ver las líneas de colisión aunque falten sprites de arte finales
+            debug: false
         }
     },
-    scene: [CaveScene]
+    scene: [CaveScene, Scene2]
 };
 
 const game = new Phaser.Game(config);

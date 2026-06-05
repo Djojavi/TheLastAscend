@@ -1,0 +1,94 @@
+{
+    "activeFile": "",
+    "expandedProjectPaths": [
+    ],
+    "fileStates": {
+        "": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "#free": {
+            "scaleInDock": 1
+        },
+        "BL-lava-tileset-itch.tsx": {
+            "scaleInDock": 2,
+            "scaleInEditor": 1
+        },
+        "Gemini_Generated_Image_lmqg6mlmqg6mlmqg.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "cave_map.json": {
+            "expandedObjectLayers": [
+                3
+            ],
+            "scale": 1,
+            "selectedLayer": 1,
+            "viewCenter": {
+                "x": 456.5,
+                "y": 444.5
+            }
+        },
+        "cave_map.json#free": {
+            "scaleInDock": 1
+        },
+        "cave_map2.json": {
+            "expandedObjectLayers": [
+                14
+            ],
+            "scale": 1,
+            "selectedLayer": 2,
+            "viewCenter": {
+                "x": 405.5,
+                "y": 405.5
+            }
+        },
+        "cave_map2.json#BL-lava-tileset-itch": {
+            "scaleInDock": 1
+        },
+        "cave_map2.json#free": {
+            "scaleInDock": 1
+        },
+        "cave_map2.json#lava": {
+            "scaleInDock": 1
+        },
+        "free.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "free1.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "lava.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "xgxwkH.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        }
+    },
+    "last.imagePath": "C:/Users/USER/source/repos/TheLastAscend/assets",
+    "map.lastUsedFormat": "json",
+    "openFiles": [
+        "lava.tsx",
+        "cave_map2.json",
+        "free.tsx",
+        "BL-lava-tileset-itch.tsx",
+        "cave_map.json"
+    ],
+    "project": "escena2.tiled-project",
+    "property.type": "bool",
+    "recentFiles": [
+        "lava.tsx",
+        "cave_map2.json",
+        "free.tsx",
+        "BL-lava-tileset-itch.tsx",
+        "cave_map.json",
+        "Gemini_Generated_Image_lmqg6mlmqg6mlmqg.tsx",
+        "free1.tsx",
+        "xgxwkH.tsx"
+    ],
+    "tileset.lastUsedFormat": "tsx"
+}

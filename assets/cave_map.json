@@ -42,6 +42,43 @@
          "y":0
         }, 
         {
+         "draworder":"topdown",
+         "id":3,
+         "name":"items",
+         "objects":[
+                {
+                 "height":0,
+                 "id":4,
+                 "name":"time_apple",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"time_apple",
+                 "visible":true,
+                 "width":0,
+                 "x":909,
+                 "y":286
+                }, 
+                {
+                 "height":0,
+                 "id":6,
+                 "name":"big_apple",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"big_apple",
+                 "visible":true,
+                 "width":0,
+                 "x":527,
+                 "y":117
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
          "id":2,
          "image":"background4a.png",
          "imageheight":480,
@@ -55,8 +92,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":3,
- "nextobjectid":1,
+ "nextlayerid":4,
+ "nextobjectid":7,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.1",
