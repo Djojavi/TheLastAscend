@@ -1,149 +1,79 @@
-// =======================================================================
-// LA ESCENA DEL JUEGO: EscenaLaboratorio
-// =======================================================================
-class EscenaLaboratorio extends Phaser.Scene {
+class MainMenuScene extends Phaser.Scene {
     constructor() {
-        super({ key: 'EscenaLaboratorio' });
+        super('MainMenuScene');
     }
 
     preload() {
-        // 1. Carga el mapa JSON y sus tilesets correspondientes
-        this.load.tilemapTiledJSON('mapa_lab', 'assets/laboratorio.json');
-        this.load.image('tiles_artifacts', 'assets/artifacts.png');
-        this.load.image('walls', 'assets/walls.png'); // Cargamos walls por si tu JSON lo requiere
-
-        // 2. CORRECCIÓN DE LA LLAVE: Usamos el archivo individual key.png
-        this.load.image('key_img', 'assets/key.png'); 
-
-        // 3. CORRECCIÓN DEL CIENTÍFICO: Asset webp directo sin subdivisiones
-        this.load.image('cientifico_prota', 'assets/cientifico.webp');
+        this.load.image('bg_wood', 'assets/bg-wood.jpg');
+        this.load.audio('music_menu', 'assets/sounds/menu.mp3');
     }
 
     create() {
-        // 1. Inicializar el mapa
-        const map = this.make.tilemap({ key: 'mapa_lab' });
-        
-        // 2. Vincular los conjuntos de patrones con sus imágenes reales
-        const tilesetArtifacts = map.addTilesetImage('artifacts', 'tiles_artifacts');
-        const tilesetImages = map.addTilesetImage('images', 'key_img'); 
-        const tilesetWalls = map.addTilesetImage('walls', 'walls');
+        const W = this.cameras.main.width;
+        const H = this.cameras.main.height;
 
-        // Reunimos todos los tilesets cargados para las capas
-        const capasPreparadas = [tilesetArtifacts, tilesetImages, tilesetWalls];
+        // ── FONDO ────────────────────────────────────────────────────────
+        this.add.image(0, 0, 'bg_wood').setOrigin(0, 0).setDisplaySize(W, H);
 
-        // 3. Crear las capas en el orden correcto
-        const capaSuelo = map.createLayer('suelo', capasPreparadas, 0, 0);
-        const capaColisiones = map.createLayer('colisiones', capasPreparadas, 0, 0);
+        // Capa oscura semitransparente para mejorar legibilidad
+        this.add.graphics()
+            .fillStyle(0x000000, 0.45)
+            .fillRect(0, 0, W, H);
 
-        // Configurar los límites reales del mundo usando las dimensiones de Tiled
-        this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+        // ── TÍTULO ───────────────────────────────────────────────────────
+        this.add.text(W / 2, 140, 'THE LAST ASCEND', {
+            fontSize: '52px',
+            fill: '#ffffff',
+            fontFamily: 'monospace',
+            fontWeight: 'bold',
+            stroke: '#000000',
+            strokeThickness: 7
+        }).setOrigin(0.5);
 
-        // Activamos colisiones en la capa designada
-        if (capaColisiones) {
-            capaColisiones.setCollisionByExclusion([-1]);
-        }
+        this.add.text(W / 2, 210, 'EPN · Proyecto de Juegos', {
+            fontSize: '18px',
+            fill: '#ffcc00',
+            fontFamily: 'monospace',
+            stroke: '#000000',
+            strokeThickness: 3
+        }).setOrigin(0.5);
 
-        // =======================================================================
-        // MUESTREO Y EXTRACCIÓN DE OBJETOS DESDE TILED (Sensible a Mayúsculas)
-        // =======================================================================
-        const spawnPlayer = map.findObject('objetos', obj => obj.name === 'player');
-        // Tu Tiled muestra el nombre como "Key" con mayúscula inicial
-        const spawnKey = map.findObject('objetos', obj => obj.name === 'Key' || obj.name === 'key');
-        const spawnPuerta = map.findObject('objetos', obj => obj.name === 'puerta');
+        // ── BOTÓN INICIAR ────────────────────────────────────────────────
+        const startBtn = this.add.text(W / 2, 340, '▶  INICIAR JUEGO', {
+            fontSize: '30px',
+            fill: '#ffffff',
+            backgroundColor: '#1a0a5e',
+            padding: { x: 24, y: 14 },
+            fontFamily: 'monospace',
+            fontWeight: 'bold',
+            stroke: '#000000',
+            strokeThickness: 3
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-        // 4. Instanciar la Puerta Física
-        if (spawnPuerta) {
-            this.puerta = this.physics.add.sprite(spawnPuerta.x + 16, spawnPuerta.y - 16, null);
-            this.puerta.setSize(32, 32); 
-            this.puerta.setImmovable(true);
-            this.puerta.setVisible(false); 
-        }
+        startBtn.on('pointerover', () => startBtn.setStyle({ fill: '#ffcc00', backgroundColor: '#2e1a99' }));
+        startBtn.on('pointerout',  () => startBtn.setStyle({ fill: '#ffffff', backgroundColor: '#1a0a5e' }));
+        startBtn.on('pointerdown', () => this.scene.start('CaveScene'));
 
-        // 5. Instanciar la Llave en su posición exacta
-        if (spawnKey) {
-            this.key = this.physics.add.sprite(spawnKey.x + 16, spawnKey.y - 16, 'key_img');
-            this.key.setSize(32, 32);
-            this.key.setDisplaySize(32, 32);
-        } else {
-            // Respawn de emergencia si Tiled no lee el objeto
-            this.key = this.physics.add.sprite(700, 100, 'key_img');
-            this.key.setSize(32, 32);
-            this.key.setDisplaySize(32, 32);
-        }
-        
-        // 6. Instanciar al Científico con su sprite correcto
-        if (spawnPlayer) {
-            this.cientifico = this.physics.add.sprite(spawnPlayer.x + 16, spawnPlayer.y - 16, 'cientifico_prota');
-        } else {
-            this.cientifico = this.physics.add.sprite(150, 150, 'cientifico_prota'); 
-        }
-        
-        // Ajustamos la caja de impacto del científico a un tamaño de bloque estándar
-        this.cientifico.setSize(32, 32);
-        this.cientifico.setDisplaySize(32, 32);
-        this.cientifico.setCollideWorldBounds(true); 
+        // ── MÚSICA ───────────────────────────────────────────────────────
+        this.music = this.sound.add('music_menu', { loop: true, volume: 0.5 });
+        this.music.play();
+        this.events.on('shutdown', () => this.music.stop());
 
-        // Estado inicial de la misión
-        this.tieneLlave = false;
-        this.mensajePuertaMostrado = false;
+        // ── INSTRUCCIONES ────────────────────────────────────────────────
+        this.add.text(W / 2, 450, '← → Moverse   ↑ / ESPACIO Saltar', {
+            fontSize: '16px',
+            fill: '#cccccc',
+            fontFamily: 'monospace',
+            stroke: '#000000',
+            strokeThickness: 2
+        }).setOrigin(0.5);
 
-        // =======================================================================
-        // ENLACE DE INTERACCIONES Y COLISIONES
-        // =======================================================================
-        if (capaColisiones) {
-            this.physics.add.collider(this.cientifico, capaColisiones);
-        }
-        if (this.puerta) {
-            this.physics.add.collider(this.cientifico, this.puerta, this.intentarAbrirPuerta, null, this);
-        }
-        if (this.key) {
-            // Usamos overlap para que al tocar la llave se active la recolección
-            this.physics.add.overlap(this.cientifico, this.key, this.recogerLlave, null, this);
-        }
-
-        // Controles de movimiento
-        this.cursors = this.input.keyboard.createCursorKeys();
-
-        // Configuración de la Cámara para el seguimiento del jugador
-        this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
-        this.cameras.main.startFollow(this.cientifico, true, 0.1, 0.1);
-    }
-
-    update() {
-        this.cientifico.setVelocity(0);
-        const velocidad = 150;
-
-        if (this.cursors.left.isDown) {
-            this.cientifico.setVelocityX(-velocidad);
-        } else if (this.cursors.right.isDown) {
-            this.cientifico.setVelocityX(velocidad);
-        }
-
-        if (this.cursors.up.isDown) {
-            this.cientifico.setVelocityY(-velocidad);
-        } else if (this.cursors.down.isDown) {
-            this.cientifico.setVelocityY(velocidad);
-        }
-
-        // Reseteo del trigger de proximidad para el mensaje de la puerta bloqueada
-        if (this.puerta && Phaser.Math.Distance.Between(this.cientifico.x, this.cientifico.y, this.puerta.x, this.puerta.y) > 50) {
-            this.mensajePuertaMostrado = false;
-        }
-    }
-
-    recogerLlave(cientifico, key) {
-        key.destroy(); 
-        this.tieneLlave = true;
-        console.log("¡Tienes la llave! Dirígete a la salida.");
-    }
-
-    intentarAbrirPuerta(cientifico, puerta) {
-        if (this.tieneLlave) {
-            console.log("¡Puerta abierta! Laboratorio completado.");
-            puerta.destroy(); 
-        } else if (!this.mensajePuertaMostrado) {
-            console.log("Acceso denegado. Se necesita la tarjeta llave.");
-            this.mensajePuertaMostrado = true; 
-        }
+        this.add.text(W / 2, 480, ' Evita la lava · ¡Escapa!', {
+            fontSize: '15px',
+            fill: '#aaaaaa',
+            fontFamily: 'monospace',
+            stroke: '#000000',
+            strokeThickness: 2
+        }).setOrigin(0.5);
     }
 }

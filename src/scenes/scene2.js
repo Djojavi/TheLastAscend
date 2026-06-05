@@ -10,6 +10,8 @@ class Scene2 extends Phaser.Scene {
         this.load.image('lava2_tiles', 'assets/xgxwkH.png');
         this.load.image('fondo_lava', 'assets/Gemini_Generated_Image_ap6o6hap6o6hap6o.png');
         this.load.image('oficinista', 'assets/oficinista.png');
+        this.load.image('oficinistaleft', 'assets/oficinista-left.png');
+        this.load.audio('music_lava', 'assets/sounds/lava.mp3');
     }
 
     create() {
@@ -170,6 +172,11 @@ this.winZones = this.physics.add.staticGroup();
 
     this.cursors = this.input.keyboard.createCursorKeys();
 
+    // ── MÚSICA ───────────────────────────────────────────────────────
+    this.music = this.sound.add('music_lava', { loop: true, volume: 0.5 });
+    this.music.play();
+    this.events.on('shutdown', () => this.music.stop());
+
     // 1. Creamos una variable para contar los saltos actuales
     this.jumpCount = 0;
 
@@ -294,9 +301,15 @@ this.winZones = this.physics.add.staticGroup();
 
     update() {
         if (this.isDead) return;
-        if (this.cursors.left.isDown)       this.player.setVelocityX(-160);
-        else if (this.cursors.right.isDown) this.player.setVelocityX(160);
-        else                                this.player.setVelocityX(0);
+        if (this.cursors.left.isDown) {
+            this.player.setVelocityX(-160);
+            this.player.setTexture('oficinistaleft');
+        } else if (this.cursors.right.isDown) {
+            this.player.setVelocityX(160);
+            this.player.setTexture('oficinista');
+        } else {
+            this.player.setVelocityX(0);
+        }
         if (this.cursors.up.isDown && this.player.body.blocked.down)
             this.player.setVelocityY(-350);
     }
