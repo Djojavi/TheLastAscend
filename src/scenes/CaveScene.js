@@ -10,6 +10,7 @@ class CaveScene extends Phaser.Scene {
         this.load.image('oficinista', 'assets/oficinista.png');
         this.load.image('oficinistaleft', 'assets/oficinista-left.png');
         this.load.audio('music_cave', 'assets/sounds/sounds-cave.mp3');
+        this.load.audio('new_level', 'assets/sounds/newLevel.mp3');
         this.load.image('time_apple', 'assets/watch.png');
         this.load.image('big_apple', 'assets/powerup.png');
     }
@@ -31,6 +32,7 @@ class CaveScene extends Phaser.Scene {
         this.player.setCollideWorldBounds(true);
         this.player.setScale(0.15);
         this.playerBig = false;
+        this.levelCompleted = false;
 
         // ── COLISIÓN CON TILES MORTALES / WIN ───────────────────────────
         this.physics.add.collider(this.player, sueloLayer, (player, tile) => {
@@ -120,7 +122,12 @@ class CaveScene extends Phaser.Scene {
     }
 
     playerWin() {
+        if (this.levelCompleted) return;
+        this.levelCompleted = true;
+
         if (this.timeEvent) this.timeEvent.destroy();
+        this.sound.stopAll();
+        this.sound.play('new_level', { volume: 0.9 });
         this.player.setVelocity(0, 0);
         this.player.body.setEnable(false);
         this.player.setTint(0x00ff00);

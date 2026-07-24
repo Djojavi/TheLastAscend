@@ -13,6 +13,7 @@ class Scene2 extends Phaser.Scene {
         this.load.image('oficinistaleft', 'assets/oficinista-left.png');
         this.load.image('bat', 'assets/bat.png');
         this.load.audio('music_lava', 'assets/sounds/lava.mp3');
+        this.load.audio('bat_sound', 'assets/sounds/bat.mp3');
     }
 
     create() {
@@ -172,10 +173,17 @@ this.winZones = this.physics.add.staticGroup();
 
     this.cursors = this.input.keyboard.createCursorKeys();
 
+    // Corta el sonido de transición al terminar de cargar el nivel 2.
+    this.sound.stopByKey('new_level');
+
     // ── MÚSICA ───────────────────────────────────────────────────────
     this.music = this.sound.add('music_lava', { loop: true, volume: 0.5 });
     this.music.play();
     this.events.on('shutdown', () => this.music.stop());
+
+    // ── SONIDO MURCIÉLAGO ────────────────────────────────────────────
+    this.batSound = this.sound.add('bat_sound', { loop: false, volume: 0.8 });
+    this.batSoundNear = false;
 
     // 1. Creamos una variable para contar los saltos actuales
     this.jumpCount = 0;
@@ -304,6 +312,7 @@ this.winZones = this.physics.add.staticGroup();
     playerDie() {
         if (this.isDead) return;
         this.isDead = true;
+        if (this.batSound && this.batSound.isPlaying) this.batSound.stop();
         this.player.setVelocity(0, 0);
         this.player.body.setEnable(false);
         this.player.setTint(0xff0000);
@@ -316,6 +325,26 @@ this.winZones = this.physics.add.staticGroup();
 
     update() {
         if (this.isDead) return;
+
+        // ── SONIDO DE MURCIÉLAGO POR PROXIMIDAD ──────────────────────────
+        const batDist = Phaser.Math.Distance.Between(
+            this.player.x, this.player.y,
+            this.bird.x, this.bird.y
+        );
+        if (batDist < 200 && !this.batSoundNear) {
+            this.batSoundNear = true;
+            if (!this.batSound.isPlaying) this.batSound.play();
+        } else if (batDist >= 200) {
+            this.batSoundNear = false;
+            if (this.batSound.isPlaying) this.batSound.stop();
+        }
+
+        // Mirror del murciélago según su dirección horizontal.
+        if (this.bird?.body) {
+            if (this.bird.body.velocity.x < 0) this.bird.setFlipX(true);
+            else if (this.bird.body.velocity.x > 0) this.bird.setFlipX(false);
+        }
+
         if (this.cursors.left.isDown) {
             this.player.setVelocityX(-160);
             this.player.setTexture('oficinistaleft');
