@@ -44,6 +44,9 @@ class Scene2 extends Phaser.Scene {
     this.player.setScale(0.15);
     this.playerBig = false;
     this.isDead = false;
+    this.jumpCount = 0;
+    this.maxJumps = 2;
+    this.walkLegs = this.add.graphics();
 
     // ── ENEMIGO VOLADOR ──────────────────────────────────────────────
     this.bird = this.physics.add.sprite(400, 400, 'bat');
@@ -162,6 +165,20 @@ this.winZones = this.physics.add.staticGroup();
         fontWeight: 'bold', stroke: '#000000', strokeThickness: 3
     }).setOrigin(0.5, 0).setScrollFactor(0);
 
+    const jumpHint = this.add.text(400, 120, 'DOBLE SALTO DISPONIBLE\nPulsa ESPACIO o ↑ para saltar', {
+        fontSize: '22px', fill: '#ffffff', fontFamily: 'monospace',
+        fontWeight: 'bold', align: 'center', stroke: '#000000', strokeThickness: 4,
+        backgroundColor: '#ff4400', padding: { x: 12, y: 8 }
+    }).setOrigin(0.5).setScrollFactor(0);
+
+    this.tweens.add({
+        targets: jumpHint,
+        alpha: 0,
+        delay: 2500,
+        duration: 1200,
+        onComplete: () => jumpHint.destroy()
+    });
+
     this.timeEvent = this.time.addEvent({
         delay: 1000, callback: this.updateTimer, callbackScope: this, loop: true
     });
@@ -170,8 +187,6 @@ this.winZones = this.physics.add.staticGroup();
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     this.cameras.main.startFollow(this.player, true, 0.05, 0.05);
-
-    this.cursors = this.input.keyboard.createCursorKeys();
 
     // Corta el sonido de transición al terminar de cargar el nivel 2.
     this.sound.stopByKey('new_level');
@@ -185,25 +200,8 @@ this.winZones = this.physics.add.staticGroup();
     this.batSound = this.sound.add('bat_sound', { loop: false, volume: 0.8 });
     this.batSoundNear = false;
 
-    // 1. Creamos una variable para contar los saltos actuales
-    this.jumpCount = 0;
-
-    // 2. Escuchamos el teclado para la barra espaciadora (se ejecuta una sola vez por pulsación)
-    this.input.keyboard.on('keydown-SPACE', () => {
-        if (this.isDead) return;
-
-        // Si el jugador está tocando el suelo, reiniciamos el contador a 0 justo antes de saltar
-        if (this.player.body.blocked.down) {
-            this.jumpCount = 0;
-        }
-
-        // Permitimos el salto si lleva menos de 2 saltos realizados
-        if (this.jumpCount < 2) {
-            this.player.setVelocityY(-350); // Fuerza del salto
-            this.jumpCount++;               // Sumamos un salto al contador
-            console.log("Salto número:", this.jumpCount);
-        }
-    });
+    this.cursors = this.input.keyboard.createCursorKeys();
+    this.jumpKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 }
 
     spawnLavaDrop() {
@@ -326,6 +324,12 @@ this.winZones = this.physics.add.staticGroup();
     update() {
         if (this.isDead) return;
 
+        if (this.player.body.blocked.down) {
+            this.jumpCount = 0;
+        }
+
+        const jumpPressed = Phaser.Input.Keyboard.JustDown(this.cursors.up) || Phaser.Input.Keyboard.JustDown(this.jumpKey);
+
         // ── SONIDO DE MURCIÉLAGO POR PROXIMIDAD ──────────────────────────
         const batDist = Phaser.Math.Distance.Between(
             this.player.x, this.player.y,
@@ -354,7 +358,48 @@ this.winZones = this.physics.add.staticGroup();
         } else {
             this.player.setVelocityX(0);
         }
-        if (this.cursors.up.isDown && this.player.body.blocked.down)
+
+        if (jumpPressed && this.jumpCount < this.maxJumps) {
             this.player.setVelocityY(-350);
+            this.jumpCount++;
+        }
+
+        const walking = this.player.body.blocked.down && this.player.body.velocity.x !== 0;
+        const baseScale = this.playerBig ? 0.3 : 0.15;
+        this.drawWalkLegs(walking, baseScale);
+        if (walking) {
+            const bob = Math.sin(this.time.now / 90) * 0.02;
+            this.player.setAngle(bob * 10);
+            this.player.setScale(baseScale, baseScale + Math.abs(bob) * 0.04);
+        } else {
+            this.player.setAngle(0);
+            this.player.setScale(baseScale);
+        }
+    }
+
+    drawWalkLegs(isWalking, baseScale) {
+        if (!this.walkLegs || !this.player?.body) return;
+
+        this.walkLegs.clear();
+        this.walkLegs.lineStyle(3, 0x2b1a12, 1);
+
+        const direction = this.cursors.left.isDown ? -1 : 1;
+        const centerX = this.player.x;
+        const centerY = this.player.y + 8 * (baseScale / 0.15);
+        const step = isWalking ? Math.sin(this.time.now / 110) * 8 : 0;
+        const lift = isWalking ? Math.abs(Math.cos(this.time.now / 110)) * 3 : 0;
+        const legLength = 12 * (baseScale / 0.15);
+        const stride = 4 * (baseScale / 0.15);
+
+        const leftHipX = centerX - stride * direction;
+        const rightHipX = centerX + stride * direction;
+        const footOffset = step * direction;
+
+        this.walkLegs.beginPath();
+        this.walkLegs.moveTo(leftHipX, centerY);
+        this.walkLegs.lineTo(leftHipX - footOffset, centerY + legLength - lift);
+        this.walkLegs.moveTo(rightHipX, centerY);
+        this.walkLegs.lineTo(rightHipX + footOffset, centerY + legLength + lift);
+        this.walkLegs.strokePath();
     }
 }

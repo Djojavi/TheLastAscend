@@ -33,6 +33,9 @@ class CaveScene extends Phaser.Scene {
         this.player.setScale(0.15);
         this.playerBig = false;
         this.levelCompleted = false;
+        this.jumpCount = 0;
+        this.maxJumps = 1;
+        this.walkLegs = this.add.graphics();
 
         // ── COLISIÓN CON TILES MORTALES / WIN ───────────────────────────
         this.physics.add.collider(this.player, sueloLayer, (player, tile) => {
@@ -80,6 +83,7 @@ class CaveScene extends Phaser.Scene {
         this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
         this.cameras.main.startFollow(this.player, true, 0.05, 0.05);
         this.cursors = this.input.keyboard.createCursorKeys();
+        this.jumpKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
         // ── MÚSICA ───────────────────────────────────────────────────────
         this.music = this.sound.add('music_cave', { loop: true, volume: 0.5 });
@@ -153,6 +157,12 @@ class CaveScene extends Phaser.Scene {
     }
 
     update() {
+        if (this.player.body.blocked.down) {
+            this.jumpCount = 0;
+        }
+
+        const jumpPressed = Phaser.Input.Keyboard.JustDown(this.cursors.up) || Phaser.Input.Keyboard.JustDown(this.jumpKey);
+
         if (this.cursors.left.isDown) {
             this.player.setVelocityX(-160);
             this.player.setTexture('oficinistaleft');
@@ -163,8 +173,22 @@ class CaveScene extends Phaser.Scene {
             this.player.setVelocityX(0);
         }
 
-        if (this.cursors.up.isDown && this.player.body.blocked.down)
+        if (jumpPressed && this.jumpCount < this.maxJumps) {
             this.player.setVelocityY(-350);
+            this.jumpCount++;
+        }
+
+        const walking = this.player.body.blocked.down && this.player.body.velocity.x !== 0;
+        const baseScale = this.playerBig ? 0.3 : 0.15;
+        this.drawWalkLegs(walking, baseScale);
+        if (walking) {
+            const bob = Math.sin(this.time.now / 90) * 0.02;
+            this.player.setAngle(bob * 10);
+            this.player.setScale(baseScale, baseScale + Math.abs(bob) * 0.04);
+        } else {
+            this.player.setAngle(0);
+            this.player.setScale(baseScale);
+        }
 
         if (this.playerBig && this.bigBar) {
             const elapsed = this.time.now - this.bigBarStart;
@@ -175,5 +199,31 @@ class CaveScene extends Phaser.Scene {
             this.bigBar.lineStyle(2, 0xffffff, 1);
             this.bigBar.strokeRect(16, 50, 150, 12);
         }
+    }
+
+    drawWalkLegs(isWalking, baseScale) {
+        if (!this.walkLegs || !this.player?.body) return;
+
+        this.walkLegs.clear();
+        this.walkLegs.lineStyle(3, 0x2b1a12, 1);
+
+        const direction = this.cursors.left.isDown ? -1 : 1;
+        const centerX = this.player.x;
+        const centerY = this.player.y + 8 * (baseScale / 0.15);
+        const step = isWalking ? Math.sin(this.time.now / 110) * 8 : 0;
+        const lift = isWalking ? Math.abs(Math.cos(this.time.now / 110)) * 3 : 0;
+        const legLength = 12 * (baseScale / 0.15);
+        const stride = 4 * (baseScale / 0.15);
+
+        const leftHipX = centerX - stride * direction;
+        const rightHipX = centerX + stride * direction;
+        const footOffset = step * direction;
+
+        this.walkLegs.beginPath();
+        this.walkLegs.moveTo(leftHipX, centerY);
+        this.walkLegs.lineTo(leftHipX - footOffset, centerY + legLength - lift);
+        this.walkLegs.moveTo(rightHipX, centerY);
+        this.walkLegs.lineTo(rightHipX + footOffset, centerY + legLength + lift);
+        this.walkLegs.strokePath();
     }
 }
